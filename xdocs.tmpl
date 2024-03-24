@@ -1,0 +1,13 @@
+# {{.Title}}
+
+## Overview
+{{.Overview}}
+
+## Resources
+{{ len .Resources }} resources defined.
+
+| Name | Kind | API Version |
+|------|------|-------------|
+{{- range .Resources }}
+| {{ .Name }} | {{ .Kind }} | {{ .APIVersion }} |
+{{- end }}

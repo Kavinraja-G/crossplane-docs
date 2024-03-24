@@ -3,16 +3,25 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
+	"text/template"
+
 	xv1 "github.com/crossplane/crossplane/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"os"
 	"sigs.k8s.io/yaml"
 )
 
-type CompositionOutputFormat struct {
-	Name       string `json:"name,omitempty"`
-	Kind       string `json:"kind,omitempty"`
-	APIVersion string `json:"api_version,omitempty"`
+type compResourceData struct {
+	Name       string
+	Kind       string
+	APIVersion string
+}
+
+type markdownOutputData struct {
+	Title     string
+	Overview  string
+	Resources []compResourceData
 }
 
 func main() {
@@ -30,9 +39,46 @@ func main() {
 		fmt.Print("Error during unmarshall...", err)
 	}
 
+	compMode := comp.Spec.Mode
+	var resources []compResourceData
+	if compMode != nil && *compMode == xv1.CompositionModePipeline {
+		fmt.Println("Composition mode is Pipeline. Skipping...")
+	} else {
+		resources = genericCompositionMode(comp.Spec.Resources)
+	}
+
+	outputData := markdownOutputData{
+		Title:     "My Crossplane Composition Documentation",
+		Overview:  "This document provides an overview of my Crossplane composition.",
+		Resources: resources,
+	}
+
+	tmpl := template.New("xdocs.tmpl")
+	tmpl, err = tmpl.ParseFiles("xdocs.tmpl")
+	if err != nil {
+		panic(err)
+	}
+
+	file, err := os.Create("output.md")
+	if err != nil {
+		fmt.Println("Error while creating markdown output", err)
+	}
+
+	err = tmpl.Execute(file, outputData)
+	if err != nil {
+		fmt.Println("Error while writing markdown output", err)
+	}
+
+	err = file.Close()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func genericCompositionMode(resources []xv1.ComposedTemplate) []compResourceData {
 	var resource xv1.ComposedTemplate
-	var docOutputs []CompositionOutputFormat
-	for _, resource = range comp.Spec.Resources {
+	var docOutputs []compResourceData
+	for _, resource = range resources {
 		rawBase, err := extractRawBaseFromRawExtension(resource.Base)
 		if err != nil {
 			fmt.Println("Error extracting raw Base", err)
@@ -41,16 +87,14 @@ func main() {
 		baseAPIVersion, _ := rawBase["apiVersion"].(string)
 		baseKind, _ := rawBase["kind"].(string)
 
-		docOutputs = append(docOutputs, CompositionOutputFormat{
+		docOutputs = append(docOutputs, compResourceData{
 			Name:       *resource.Name,
 			APIVersion: baseAPIVersion,
 			Kind:       baseKind,
 		})
 	}
 
-	for _, docOutput := range docOutputs {
-		fmt.Printf("Name: %s | APIVersion: %s | Kind: %s\n", docOutput.Name, docOutput.APIVersion, docOutput.Kind)
-	}
+	return docOutputs
 }
 
 func extractRawBaseFromRawExtension(rawExt runtime.RawExtension) (map[string]interface{}, error) {
@@ -60,4 +104,17 @@ func extractRawBaseFromRawExtension(rawExt runtime.RawExtension) (map[string]int
 	}
 
 	return rawMap, nil
+}
+
+// markdownEscape escapes markdown special characters in a string.
+func markdownEscape(input string) string {
+	// List of markdown characters to escape
+	// You might need to expand this list based on your requirements
+	specialChars := []string{"|", "\\"}
+
+	for _, char := range specialChars {
+		input = strings.ReplaceAll(input, char, "\\"+char)
+	}
+
+	return input
 }
