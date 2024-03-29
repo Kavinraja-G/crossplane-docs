@@ -4,7 +4,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: table.dynamodb.awsblueprints.io
+  name: table-1.dynamodb.awsblueprints.io
   labels:
     awsblueprints.io/provider: aws
     awsblueprints.io/environment: dev
@@ -32,7 +32,7 @@ spec:
                 regexp:
                   match: ^(.*?)-crossplane
   resources:
-    - name: table
+    - name: costTable
       connectionDetails:
         - type: FromFieldPath
           name: tableName
@@ -103,7 +103,7 @@ spec:
         - type: ToCompositeFieldPath
           fromFieldPath: status.atProvider.arn
           toFieldPath: status.tableArn
-    - name: table
+    - name: genericTable
       connectionDetails:
         - type: FromFieldPath
           name: tableName

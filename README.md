@@ -1,2 +1,2 @@
 # crossplane-docs
-Markdown based docs generator for Crossplane
+XDocs generator for Crossplane.
