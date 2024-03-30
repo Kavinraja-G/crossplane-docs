@@ -1,7 +1,7 @@
 # crossplane-docs
 ## What is XDocs?
 - We have XR, XRD, XRC ;) Why not XDocs?
-- Inspired from [terraform-docs](https://github.com/terraform-docs/terraform-docs) but for Crossplane
+- Inspired from [terraform-docs](https://github.com/terraform-docs/terraform-docs) but for [Crossplane](https://www.crossplane.io/)
 - Generate markdown based docs for your Compositions, it also included your linked XRDs and Claims
 
 ## Installation
