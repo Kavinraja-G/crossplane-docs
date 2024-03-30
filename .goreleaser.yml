@@ -33,6 +33,7 @@ brews:
   - name: crossplane-docs
     homepage: "https://github.com/Kavinraja-G/crossplane-docs/"
     description: "XDocs generator for Crossplane"
-    tap:
+    repository:
       owner: Kavinraja-G
       name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
