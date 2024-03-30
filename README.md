@@ -38,5 +38,13 @@ crossplane-docs md ./samples -o samples/README.md
 ```
 Check [README.md](./samples/README.md) for the output.
 
+## Features
+- Discovers Composition & its resources, XR, XRD and Claim names with their references
+- Markdown ouput with tabulation
+- Claim/XRC specifications (WIP)
+
+## Limitations
+Crossplane compositions with Pipeline composition mode is not supported.
+
 ## License
 Distributed under the Apache-2.0 License. See [LICENSE](./LICENSE) for more information.
