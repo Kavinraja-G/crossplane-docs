@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"text/template"
 
@@ -15,37 +14,49 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+// GenMarkdownDocs driver function for markdown sub-command
 func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 	outputFileName, err := cmd.Flags().GetString("output-file")
 	if err != nil {
 		return err
 	}
 
-	// find and discover compositions in the provided search path
-	discoveredCompositions, err := findAndDiscoverCompositions(searchPath)
+	// find and discover XRDs in the provided search path
+	discoveredXRDs, err := discoverXRDs(searchPath)
 	if err != nil {
 		return err
 	}
 
-	// now iterate all discovered compositions and build the output data
-	// TODO: currently, we skip if the composition is based on pipeline. Need to enable support for them
+	// find and discover compositions in the provided search path
+	discoveredCompositions, err := discoverCompositions(searchPath)
+	if err != nil {
+		return err
+	}
+
+	// now iterate all discovered XRDs and build XRD output map with XRName as Key
+	xrdOutputs := make(map[string]CompResourceDefinitionData)
+	for _, xrd := range discoveredXRDs {
+		xrdOutputs[xrd.Spec.Names.Kind] = CompResourceDefinitionData{
+			Name:                  xrd.Name,
+			CompositeResourceKind: xrd.Spec.Names.Kind,
+			ClaimNameKind:         xrd.Spec.ClaimNames.Kind,
+		}
+	}
+
+	// now iterate all discovered compositions, link with respective XRDs and build the output data
 	var mdOutputData []MarkdownOutputData
 	for _, comp := range discoveredCompositions {
-		compMode := comp.Spec.Mode
-		var resources []CompResourceData
-		if compMode != nil && *compMode == xv1.CompositionModePipeline {
-			fmt.Printf("Composition: %s is in pipeline mode. Skipping...\n", comp.Name)
-		} else {
-			resources, err = genericCompositionMode(comp.Spec.Resources)
-			if err != nil {
-				return err
-			}
+		resources, err := genericCompositionMode(comp.Spec.Resources)
+		if err != nil {
+			return err
 		}
+
 		mdOutputData = append(mdOutputData, MarkdownOutputData{
 			CompositionName: comp.Name,
 			XRAPIVersion:    comp.Spec.CompositeTypeRef.APIVersion,
 			XRKind:          comp.Spec.CompositeTypeRef.Kind,
 			Resources:       resources,
+			LinkedXRDData:   xrdOutputs[comp.Spec.CompositeTypeRef.Kind],
 		})
 	}
 
@@ -57,8 +68,8 @@ func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 	return nil
 }
 
-// findAndDiscoverCompositions returns compositions fetched from the target path
-func findAndDiscoverCompositions(searchPath string) ([]xv1.Composition, error) {
+// discoverCompositions returns compositions fetched from the target path
+func discoverCompositions(searchPath string) ([]xv1.Composition, error) {
 	yamlFiles, err := utils.FindYAMLFiles(searchPath)
 	if err != nil {
 		return nil, err
@@ -78,10 +89,49 @@ func findAndDiscoverCompositions(searchPath string) ([]xv1.Composition, error) {
 		if err != nil {
 			return nil, err
 		}
-		discoveredCompositions = append(discoveredCompositions, comp)
+
+		// validate if it is a Composition by checking the Kind
+		// support only if the composition mode is Resources
+		kind := comp.Kind
+		compMode := comp.Spec.Mode
+		if (kind != "" && kind == xv1.CompositionKind) && (compMode == nil || *compMode == xv1.CompositionModeResources) {
+			discoveredCompositions = append(discoveredCompositions, comp)
+		}
 	}
 
 	return discoveredCompositions, nil
+}
+
+// discoverXRDs returns XRDs fetched from the target path
+func discoverXRDs(searchPath string) ([]xv1.CompositeResourceDefinition, error) {
+	// read yamlFiles in the specified directory
+	yamlFiles, err := utils.FindYAMLFiles(searchPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var discoveredXRDs []xv1.CompositeResourceDefinition
+	for _, file := range yamlFiles {
+		rawXRD, err := os.ReadFile(file)
+		if err != nil {
+			return nil, err
+		}
+
+		// unmarshall and store yaml as discovered XRDs
+		var xrd xv1.CompositeResourceDefinition
+		err = yaml.Unmarshal(rawXRD, &xrd)
+		if err != nil {
+			return nil, err
+		}
+
+		// validate if it is a XRD by checking the Kind
+		kind := xrd.Kind
+		if kind != "" && kind == xv1.CompositeResourceDefinitionKind {
+			discoveredXRDs = append(discoveredXRDs, xrd)
+		}
+	}
+
+	return discoveredXRDs, nil
 }
 
 // genericCompositionMode this handles logic for the Compositions without pipeline mode

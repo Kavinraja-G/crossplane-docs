@@ -1,0 +1,45 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xjetpostgresqls.database.wk
+spec:
+  group: database.wk
+  names:
+    kind: XJetPostgreSQL
+    plural: xjetpostgresqls
+  claimNames:
+    kind: JetPostgreSQL
+    plural: jetpostgresqls
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                parameters:
+                  type: object
+                  properties:
+                    storageGB:
+                      type: integer
+                      description: size of the Database in GB - integer
+                    dbName:
+                      type: string
+                      description: name of the new DB inside the DB instance - string
+                    instanceSize:
+                      type: string
+                      description: instance size - string
+                      enum:
+                        - small
+                        - medium
+                        - large
+                  required:
+                    - storageGB
+                    - dbName
+                    - instanceSize
+              required:
+                - parameters

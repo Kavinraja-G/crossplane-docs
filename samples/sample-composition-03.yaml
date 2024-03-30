@@ -1,0 +1,142 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: jetpostgresql.gcp.database.wk
+  labels:
+    provider: gcp
+    crossplane.io/xrd: xjetpostgresql.database.wk
+spec:
+  compositeTypeRef:
+    apiVersion: database.wk/v1alpha1
+    kind: XJetPostgreSQL
+  resources:
+    - name: cloudsqlinstance
+      base:
+        apiVersion: sql.gcp.jet.crossplane.io/v1alpha2
+        kind: DatabaseInstance
+        metadata:
+          annotations:
+            crossplane.io/external-name: "crossplanesqlinstance"
+        spec:
+          providerConfigRef:
+            name: crossplane-provider-jet-gcp
+          deletionPolicy: Delete
+          forProvider:
+            databaseVersion: POSTGRES_14
+            region: us-central1
+            deletionProtection: false
+            settings:
+              - tier: db-custom-1-3840
+                diskType: PD_SSD
+                diskSize: 20
+                ipConfiguration:
+                  - ipv4Enabled: true
+                    authorizedNetworks:
+                      - value: "0.0.0.0/0"
+            userLabels:
+              creator: crossplane
+              owner: prune
+          writeConnectionSecretToRef:
+            namespace: crossplane
+            name: cloudsqlinstance
+      patches:
+        # set diskSize based on the Claim
+        - fromFieldPath: "spec.parameters.storageGB"
+          toFieldPath: "spec.forProvider.settings[0].diskSize"
+        # set the secret name to the claim name
+        - fromFieldPath: "metadata.labels[crossplane.io/claim-name]"
+          toFieldPath: "spec.writeConnectionSecretToRef.name"
+          transforms:
+            - type: string
+              string:
+                fmt: "%s-pginstance"
+        # change secret namespace to the one of the claim
+        - fromFieldPath: "metadata.labels[crossplane.io/claim-namespace]"
+          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+        # set label app = name of the original claim
+        - fromFieldPath: "metadata.labels[crossplane.io/claim-name]"
+          toFieldPath: "metadata.labels[crossplane.io/app]"
+        # set the name of the external resource to be the name of the claim
+        - fromFieldPath: "metadata.labels[crossplane.io/claim-name]"
+          toFieldPath: "metadata.annotations[crossplane.io/external-name]"
+        # set instance size to the one defined in the claim
+        - fromFieldPath: "spec.parameters.instanceSize"
+          toFieldPath: "spec.forProvider.settings[0].tier"
+          transforms:
+            - type: map
+              map:
+                small: db-custom-1-3840
+                medium: db-custom-2-7680
+                large: db-custom-4-15360
+          policy:
+            fromFieldPath: Required
+    - name: cloudsqldb
+      base:
+        apiVersion: sql.gcp.jet.crossplane.io/v1alpha2
+        kind: Database
+        metadata:
+          annotations:
+            crossplane.io/external-name: "crossplanesqldb"
+        spec:
+          providerConfigRef:
+            name: crossplane-provider-jet-gcp
+          deletionPolicy: Delete
+          forProvider:
+            instanceSelector:
+              MatchControllerRef: true
+          writeConnectionSecretToRef:
+            namespace: crossplane
+            name: cloudsqldb
+      patches:
+        # set the secret name to the claim name
+        - fromFieldPath: "metadata.labels[crossplane.io/claim-name]"
+          toFieldPath: "spec.writeConnectionSecretToRef.name"
+          transforms:
+            - type: string
+              string:
+                fmt: "%s-pgdb"
+        # change secret namespace to the one of the claim
+        - fromFieldPath: "metadata.labels[crossplane.io/claim-namespace]"
+          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+        # set the name of the DB resource to be the name defined in the claim
+        - fromFieldPath: "spec.parameters.dbName"
+          toFieldPath: "metadata.annotations[crossplane.io/external-name]"
+        # set app Label
+        - fromFieldPath: "metadata.labels[crossplane.io/claim-name]"
+          toFieldPath: "metadata.labels[crossplane.io/app]"
+    - name: cloudsqldbuser
+      base:
+        apiVersion: sql.gcp.jet.crossplane.io/v1alpha2
+        kind: User
+        metadata:
+          annotations:
+            # set the name of the DB User, this is hardcoded for demo but should come from the CRD
+            crossplane.io/external-name: "existing-sa-for-db@my-project.iam"
+        spec:
+          providerConfigRef:
+            name: crossplane-provider-jet-gcp
+          deletionPolicy: Delete
+          forProvider:
+            instanceSelector:
+              MatchControllerRef: true
+            type: CLOUD_IAM_SERVICE_ACCOUNT
+          writeConnectionSecretToRef:
+            namespace: crossplane
+            name: cloudsqluser
+      patches:
+        # set the secret name to the claim name
+        - fromFieldPath: "metadata.labels[crossplane.io/claim-name]"
+          toFieldPath: "spec.writeConnectionSecretToRef.name"
+          transforms:
+            - type: string
+              string:
+                fmt: "%s-pguser"
+        # change secret namespace to the one of the claim
+        - fromFieldPath: "metadata.labels[crossplane.io/claim-namespace]"
+          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+        # set the name of the DB User, this is hardcoded for demo but should come from the Claim CRD
+        # - fromFieldPath: "spec.parameters.dbName"
+        #   toFieldPath: "metadata.annotations[crossplane.io/external-name]"
+        # set app Label
+        - fromFieldPath: "metadata.labels[crossplane.io/claim-name]"
+          toFieldPath: "metadata.labels[crossplane.io/app]"
