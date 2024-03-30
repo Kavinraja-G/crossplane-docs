@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// FindYAMLFiles lists all YAML files in the specified directory.
+// FindYAMLFiles lists all YAML files in the specified directory
 func FindYAMLFiles(directory string) ([]string, error) {
 	var yamlFiles []string
 	files, err := os.ReadDir(directory)
