@@ -6,8 +6,8 @@ import "github.com/spf13/cobra"
 func NewCmdRoot() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "crossplane-docs",
-		Aliases: []string{"x-docs"},
 		Short:   "crossplane-docs - Docs generator for your crossplane resources",
+		Version: "0.1.0",
 		RunE: func(c *cobra.Command, args []string) error {
 			if err := c.Help(); err != nil {
 				return err

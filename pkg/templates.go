@@ -3,13 +3,22 @@ package pkg
 var markdownGenericTemplate = `
 {{- range . }}
 ### {{ .CompositionName }}
-| XR Kind | XR APIVersion |
+| XR Kind | XR Version |
 |---------|-------------|
 | {{ .XRKind }} | {{ .XRAPIVersion }} |
 #### XRD
 | Name | Claim |
 |------|-------|
-| {{ .LinkedXRDData.Name }} | {{ .LinkedXRDData.ClaimNameKind }} |
+| {{ .LinkedXRD.Name }} | {{ .LinkedXRD.ClaimNameKind }} |
+#### XRD Spec
+{{- range .LinkedXRD.Versions }}
+##### Version: {{ .Version }}
+| Field | Path | Type | Description | Required |
+|------|-------|------|-------|-------|
+{{- range .XRDSpec }}
+| {{ .FieldName }} | {{ .Path }} | {{ .Type }} | {{ .Description }} | {{ .Required }} |
+{{- end }}
+{{- end }}
 #### Resources
 | Name | Kind | API Version |
 |------|------|-------------|

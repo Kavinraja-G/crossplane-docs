@@ -3,6 +3,7 @@ package pkg
 import (
 	"encoding/json"
 	"os"
+	"strings"
 	"text/template"
 
 	"github.com/Kavinraja-G/crossplane-docs/utils"
@@ -10,7 +11,9 @@ import (
 	"github.com/spf13/cobra"
 
 	xv1 "github.com/crossplane/crossplane/apis/apiextensions/v1"
+	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/yaml"
 )
 
@@ -33,13 +36,30 @@ func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 		return err
 	}
 
-	// now iterate all discovered XRDs and build XRD output map with XRName as Key
+	// now iterate all discovered XRDs and build XRD output map with XR & API spec details
 	xrdOutputs := make(map[string]CompResourceDefinitionData)
 	for _, xrd := range discoveredXRDs {
+		var xrdVersions []XRDVersion
+		for _, version := range xrd.Spec.Versions {
+			openAPIV3Schema, err := getOpenAPIV3Schema(version.Schema.OpenAPIV3Schema.Raw)
+			if err != nil {
+				return err
+			}
+
+			var xrdOutputData []XRDSpecData
+			getXRDSpecData(openAPIV3Schema, &xrdOutputData, []string{}, []string{})
+
+			xrdVersions = append(xrdVersions, XRDVersion{
+				Version: version.Name,
+				XRDSpec: xrdOutputData,
+			})
+		}
+
 		xrdOutputs[xrd.Spec.Names.Kind] = CompResourceDefinitionData{
 			Name:                  xrd.Name,
 			CompositeResourceKind: xrd.Spec.Names.Kind,
 			ClaimNameKind:         xrd.Spec.ClaimNames.Kind,
+			Versions:              xrdVersions,
 		}
 	}
 
@@ -56,7 +76,7 @@ func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 			XRAPIVersion:    comp.Spec.CompositeTypeRef.APIVersion,
 			XRKind:          comp.Spec.CompositeTypeRef.Kind,
 			Resources:       resources,
-			LinkedXRDData:   xrdOutputs[comp.Spec.CompositeTypeRef.Kind],
+			LinkedXRD:       xrdOutputs[comp.Spec.CompositeTypeRef.Kind],
 		})
 	}
 
@@ -66,6 +86,34 @@ func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 	}
 
 	return nil
+}
+
+// getOpenAPIV3Schema parses the XRDs raw API schema as JSONSchemaProps
+func getOpenAPIV3Schema(rawSchemaData []byte) (extv1.JSONSchemaProps, error) {
+	openAPIV3Schema := extv1.JSONSchemaProps{}
+	err := json.Unmarshal(rawSchemaData, &openAPIV3Schema)
+	if err != nil {
+		return openAPIV3Schema, err
+	}
+
+	return openAPIV3Schema, nil
+}
+
+// getXRDSpecData returns the specifications for the given XRD API
+func getXRDSpecData(schema extv1.JSONSchemaProps, xrcOutputData *[]XRDSpecData, schemaPath []string, requiredFields []string) {
+	for propName, propValue := range schema.Properties {
+		*xrcOutputData = append(*xrcOutputData, XRDSpecData{
+			FieldName:   propName,
+			Path:        strings.Join(schemaPath, "."),
+			Type:        propValue.Type,
+			Description: propValue.Description,
+			Required:    slices.Contains(requiredFields, propName),
+		})
+		if propValue.Properties != nil {
+			// recursively iterate all the nested properties
+			getXRDSpecData(propValue, xrcOutputData, append(schemaPath, propName), propValue.Required)
+		}
+	}
 }
 
 // discoverCompositions returns compositions fetched from the target path

@@ -10,8 +10,12 @@ var outputFileName string
 // NewCmdMarkdown drives the markdown command for x-docs
 func NewCmdMarkdown() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "markdown [PATH]",
-		Short:   "Generates markdown based docs for Crossplane resources",
+		Use:   "markdown [PATH]",
+		Short: "Generates markdown based docs for Crossplane resources",
+		Example: `
+# Move to the directory which has XRDs & Compositions 
+crossplane-docs markdown ./samples -o samples/README.md
+`,
 		Aliases: []string{"md"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
