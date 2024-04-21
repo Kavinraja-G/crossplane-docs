@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"encoding/json"
-	"k8s.io/utils/strings/slices"
 	"os"
 	"strings"
 	"text/template"
@@ -14,6 +13,7 @@ import (
 	xv1 "github.com/crossplane/crossplane/apis/apiextensions/v1"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/yaml"
 )
 
