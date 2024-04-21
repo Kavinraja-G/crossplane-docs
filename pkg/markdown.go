@@ -36,11 +36,10 @@ func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 		return err
 	}
 
-	// now iterate all discovered XRDs and build XRD output map with XRName as Key
+	// now iterate all discovered XRDs and build XRD output map with XR & API spec details
 	xrdOutputs := make(map[string]CompResourceDefinitionData)
 	for _, xrd := range discoveredXRDs {
-		openAPIV3Schema := extv1.JSONSchemaProps{}
-		err = json.Unmarshal(xrd.Spec.Versions[0].Schema.OpenAPIV3Schema.Raw, &openAPIV3Schema)
+		openAPIV3Schema, err := getOpenAPIV3Schema(xrd.Spec.Versions[0].Schema.OpenAPIV3Schema.Raw)
 		if err != nil {
 			return err
 		}
@@ -79,6 +78,17 @@ func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 	}
 
 	return nil
+}
+
+// getOpenAPIV3Schema parses the XRDs raw API schema as JSONSchemaProps
+func getOpenAPIV3Schema(rawSchemaData []byte) (extv1.JSONSchemaProps, error) {
+	openAPIV3Schema := extv1.JSONSchemaProps{}
+	err := json.Unmarshal(rawSchemaData, &openAPIV3Schema)
+	if err != nil {
+		return openAPIV3Schema, err
+	}
+
+	return openAPIV3Schema, nil
 }
 
 // getXRDSpecData returns the specifications for the given XRD API
