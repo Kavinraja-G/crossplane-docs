@@ -2,7 +2,9 @@ package pkg
 
 import (
 	"encoding/json"
+	"k8s.io/utils/strings/slices"
 	"os"
+	"strings"
 	"text/template"
 
 	"github.com/Kavinraja-G/crossplane-docs/utils"
@@ -10,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	xv1 "github.com/crossplane/crossplane/apis/apiextensions/v1"
+	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/yaml"
 )
@@ -36,10 +39,20 @@ func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 	// now iterate all discovered XRDs and build XRD output map with XRName as Key
 	xrdOutputs := make(map[string]CompResourceDefinitionData)
 	for _, xrd := range discoveredXRDs {
+		openAPIV3Schema := extv1.JSONSchemaProps{}
+		err = json.Unmarshal(xrd.Spec.Versions[0].Schema.OpenAPIV3Schema.Raw, &openAPIV3Schema)
+		if err != nil {
+			return err
+		}
+
+		var xrdOutputData []XRDSpecData
+		getXRDSpecData(openAPIV3Schema, &xrdOutputData, []string{}, []string{})
+
 		xrdOutputs[xrd.Spec.Names.Kind] = CompResourceDefinitionData{
 			Name:                  xrd.Name,
 			CompositeResourceKind: xrd.Spec.Names.Kind,
 			ClaimNameKind:         xrd.Spec.ClaimNames.Kind,
+			XRDSpec:               xrdOutputData,
 		}
 	}
 
@@ -66,6 +79,22 @@ func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 	}
 
 	return nil
+}
+
+// getXRDSpecData returns the specifications for the given XRD API
+func getXRDSpecData(schema extv1.JSONSchemaProps, xrcOutputData *[]XRDSpecData, schemaPath []string, requiredFields []string) {
+	for propName, propValue := range schema.Properties {
+		*xrcOutputData = append(*xrcOutputData, XRDSpecData{
+			FieldName:   propName,
+			Path:        strings.Join(schemaPath, "."),
+			Type:        propValue.Type,
+			Description: propValue.Description,
+			Required:    slices.Contains(requiredFields, propName),
+		})
+		if propValue.Properties != nil {
+			getXRDSpecData(propValue, xrcOutputData, append(schemaPath, propName), propValue.Required)
+		}
+	}
 }
 
 // discoverCompositions returns compositions fetched from the target path

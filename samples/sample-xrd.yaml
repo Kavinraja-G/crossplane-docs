@@ -20,6 +20,7 @@ spec:
           properties:
             spec:
               type: object
+              description: Required spec field for your API
               properties:
                 parameters:
                   type: object
