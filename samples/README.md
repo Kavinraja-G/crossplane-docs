@@ -8,6 +8,7 @@
 |------|-------|
 | xjetpostgresqls.database.wk | JetPostgreSQL |
 #### XRD Spec
+##### Version: v1alpha1
 | Field | Path | Type | Description | Required |
 |------|-------|------|-------|-------|
 | spec |  | object | Required spec field for your API | false |

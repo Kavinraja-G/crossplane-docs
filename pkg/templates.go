@@ -9,12 +9,15 @@ var markdownGenericTemplate = `
 #### XRD
 | Name | Claim |
 |------|-------|
-| {{ .LinkedXRDData.Name }} | {{ .LinkedXRDData.ClaimNameKind }} |
+| {{ .LinkedXRD.Name }} | {{ .LinkedXRD.ClaimNameKind }} |
 #### XRD Spec
+{{- range .LinkedXRD.Versions }}
+##### Version: {{ .Version }}
 | Field | Path | Type | Description | Required |
 |------|-------|------|-------|-------|
-{{- range .LinkedXRDData.XRDSpec }}
+{{- range .XRDSpec }}
 | {{ .FieldName }} | {{ .Path }} | {{ .Type }} | {{ .Description }} | {{ .Required }} |
+{{- end }}
 {{- end }}
 #### Resources
 | Name | Kind | API Version |

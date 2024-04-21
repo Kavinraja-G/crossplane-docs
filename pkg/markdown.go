@@ -39,19 +39,27 @@ func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 	// now iterate all discovered XRDs and build XRD output map with XR & API spec details
 	xrdOutputs := make(map[string]CompResourceDefinitionData)
 	for _, xrd := range discoveredXRDs {
-		openAPIV3Schema, err := getOpenAPIV3Schema(xrd.Spec.Versions[0].Schema.OpenAPIV3Schema.Raw)
-		if err != nil {
-			return err
-		}
+		var xrdVersions []XRDVersion
+		for _, version := range xrd.Spec.Versions {
+			openAPIV3Schema, err := getOpenAPIV3Schema(version.Schema.OpenAPIV3Schema.Raw)
+			if err != nil {
+				return err
+			}
 
-		var xrdOutputData []XRDSpecData
-		getXRDSpecData(openAPIV3Schema, &xrdOutputData, []string{}, []string{})
+			var xrdOutputData []XRDSpecData
+			getXRDSpecData(openAPIV3Schema, &xrdOutputData, []string{}, []string{})
+
+			xrdVersions = append(xrdVersions, XRDVersion{
+				Version: version.Name,
+				XRDSpec: xrdOutputData,
+			})
+		}
 
 		xrdOutputs[xrd.Spec.Names.Kind] = CompResourceDefinitionData{
 			Name:                  xrd.Name,
 			CompositeResourceKind: xrd.Spec.Names.Kind,
 			ClaimNameKind:         xrd.Spec.ClaimNames.Kind,
-			XRDSpec:               xrdOutputData,
+			Versions:              xrdVersions,
 		}
 	}
 
@@ -68,7 +76,7 @@ func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 			XRAPIVersion:    comp.Spec.CompositeTypeRef.APIVersion,
 			XRKind:          comp.Spec.CompositeTypeRef.Kind,
 			Resources:       resources,
-			LinkedXRDData:   xrdOutputs[comp.Spec.CompositeTypeRef.Kind],
+			LinkedXRD:       xrdOutputs[comp.Spec.CompositeTypeRef.Kind],
 		})
 	}
 
