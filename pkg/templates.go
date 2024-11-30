@@ -27,3 +27,21 @@ var markdownGenericTemplate = `
 {{- end }}
 {{- end }}
 `
+
+var markdownXRDOnlyTemplate = `
+{{- range . }}
+### {{ .Name }}
+| Name | Claim |
+|------|-------|
+| {{ .Name }} | {{ .ClaimNameKind }} |
+#### Specs
+{{- range .Versions }}
+##### Version: {{ .Version }}
+| Field | Path | Type | Description | Required |
+|------|-------|------|-------|-------|
+{{- range .XRDSpec }}
+| {{ .FieldName }} | {{ .Path }} | {{ .Type }} | {{ .Description }} | {{ .Required }} |
+{{- end }}
+{{- end }}
+{{- end }}
+`

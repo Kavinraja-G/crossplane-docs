@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"text/template"
@@ -19,7 +20,7 @@ import (
 
 // GenMarkdownDocs driver function for markdown sub-command
 func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
-	outputFileName, err := cmd.Flags().GetString("output-file")
+	outputOpts, err := getOutputOpts(cmd)
 	if err != nil {
 		return err
 	}
@@ -37,7 +38,7 @@ func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 	}
 
 	// now iterate all discovered XRDs and build XRD output map with XR & API spec details
-	xrdOutputs := make(map[string]CompResourceDefinitionData)
+	var xrdOutputs []CompResourceDefinitionData
 	for _, xrd := range discoveredXRDs {
 		var xrdVersions []XRDVersion
 		for _, version := range xrd.Spec.Versions {
@@ -55,37 +56,79 @@ func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 			})
 		}
 
-		xrdOutputs[xrd.Spec.Names.Kind] = CompResourceDefinitionData{
+		xrdOutputs = append(xrdOutputs, CompResourceDefinitionData{
 			Name:                  xrd.Name,
 			CompositeResourceKind: xrd.Spec.Names.Kind,
 			ClaimNameKind:         xrd.Spec.ClaimNames.Kind,
 			Versions:              xrdVersions,
+		})
+	}
+
+	// handle only XRDs if set to true
+	if outputOpts.PrintXRDOnly {
+		if err = outputMarkdownDocs(outputOpts, xrdOutputs); err != nil {
+			return err
 		}
+		return nil
 	}
 
 	// now iterate all discovered compositions, link with respective XRDs and build the output data
-	var mdOutputData []MarkdownOutputData
+	var mdOutputData []GenericOutputData
 	for _, comp := range discoveredCompositions {
 		resources, err := genericCompositionMode(comp.Spec.Resources)
 		if err != nil {
 			return err
 		}
 
-		mdOutputData = append(mdOutputData, MarkdownOutputData{
+		linkedXRD, found := findXRDByKind(xrdOutputs, comp.Spec.CompositeTypeRef.Kind)
+		if !found {
+			fmt.Errorf("could not find XRD for composite kind %s", comp.Spec.CompositeTypeRef.Kind)
+		}
+
+		mdOutputData = append(mdOutputData, GenericOutputData{
 			CompositionName: comp.Name,
 			XRAPIVersion:    comp.Spec.CompositeTypeRef.APIVersion,
 			XRKind:          comp.Spec.CompositeTypeRef.Kind,
 			Resources:       resources,
-			LinkedXRD:       xrdOutputs[comp.Spec.CompositeTypeRef.Kind],
+			LinkedXRD:       linkedXRD,
 		})
 	}
 
-	// generate markdown docs
-	if err = outputMarkdownDocs(outputFileName, mdOutputData); err != nil {
+	// output generic markdown docs
+	if err = outputMarkdownDocs(outputOpts, mdOutputData); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// getOutputOpts builds the output options for the generator
+func getOutputOpts(cmd *cobra.Command) (OutputOpts, error) {
+	outFile, err := cmd.Flags().GetString("output-file")
+	if err != nil {
+		return OutputOpts{}, err
+	}
+	xrdOnly, err := cmd.Flags().GetBool("xrd-only")
+	if err != nil {
+		return OutputOpts{}, err
+	}
+
+	outputTemplate := markdownGenericTemplate
+	if xrdOnly {
+		outputTemplate = markdownXRDOnlyTemplate
+	}
+
+	return OutputOpts{OutputFileName: outFile, OutputTemplate: outputTemplate, PrintXRDOnly: xrdOnly}, nil
+}
+
+// findXRDByKind checks if the given slice contains XRDs mapped to the specific kind
+func findXRDByKind(xrdOutputs []CompResourceDefinitionData, kind string) (CompResourceDefinitionData, bool) {
+	for _, xrd := range xrdOutputs {
+		if xrd.CompositeResourceKind == kind {
+			return xrd, true
+		}
+	}
+	return CompResourceDefinitionData{}, false
 }
 
 // getOpenAPIV3Schema parses the XRDs raw API schema as JSONSchemaProps
@@ -216,14 +259,13 @@ func extractRawBaseFromRawExtension(rawExt runtime.RawExtension) (map[string]int
 }
 
 // outputMarkdownDocs generates Markdown docs file based on the discovered composition outputs
-func outputMarkdownDocs(outputFileName string, mdOutputData []MarkdownOutputData) error {
-	tmpl := template.New("md_docs")
-	tmpl, err := tmpl.Parse(markdownGenericTemplate)
+func outputMarkdownDocs(opts OutputOpts, mdOutputData interface{}) error {
+	tmpl, err := template.New("md_docs").Parse(opts.OutputTemplate)
 	if err != nil {
 		return err
 	}
 
-	file, err := os.Create(outputFileName)
+	file, err := os.Create(opts.OutputFileName)
 	if err != nil {
 		return err
 	}
