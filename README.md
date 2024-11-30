@@ -46,7 +46,7 @@ Check [README.md](./samples/README.md) for the output.
 - Discovers Composition & its resources, XR, XRD and Claim names with their references
 - Markdown ouput with tabulation
 - Supports generating only XRD docs
-- Claim/XRC specifications (WIP)
+- Claim/XRC specifications
 
 ## Limitations
 Crossplane compositions with Pipeline composition mode is not supported.
