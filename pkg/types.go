@@ -1,5 +1,11 @@
 package pkg
 
+type OutputOpts struct {
+	OutputFileName string
+	OutputTemplate string
+	PrintXRDOnly   bool
+}
+
 type CompResourceData struct {
 	Name       string
 	Kind       string
@@ -29,8 +35,8 @@ type CompResourceDefinitionData struct {
 	Versions              []XRDVersion
 }
 
-// MarkdownOutputData output data struct used by markdown generator
-type MarkdownOutputData struct {
+// GenericOutputData output data struct used by markdown generator
+type GenericOutputData struct {
 	CompositionName string
 	XRAPIVersion    string
 	XRKind          string

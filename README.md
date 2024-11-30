@@ -30,7 +30,11 @@ Download the `.exe` file and add it to your `PATH`
 ## Usage
 Currently xDocs supports only markdown output, but more in pipeline. To generate markdown docs for your compositions & XRDs
 ```bash
-crossplane-docs md [INPUT_PATH|INPUT_FILE] -o [OUTPUT_FILE]
+# Generate markdown docs for given compositions and XRDs
+crossplane-docs md [INPUT_PATH] -o [OUTPUT_FILE]
+
+# In some cases users prefer to generate XRD docs since pipeline mode is not supported
+crossplane-docs md [INPUT_PATH] -o [OUTPUT_FILE] --xrd-only
 ```
 For example:
 ```bash
@@ -41,6 +45,7 @@ Check [README.md](./samples/README.md) for the output.
 ## Features
 - Discovers Composition & its resources, XR, XRD and Claim names with their references
 - Markdown ouput with tabulation
+- Supports generating only XRD docs
 - Claim/XRC specifications
 
 ## Limitations

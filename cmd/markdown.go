@@ -5,7 +5,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var outputFileName string
+var (
+	outputFileName string
+	printXRDOnly   bool
+)
 
 // NewCmdMarkdown drives the markdown command for x-docs
 func NewCmdMarkdown() *cobra.Command {
@@ -25,6 +28,7 @@ crossplane-docs markdown ./samples -o samples/README.md
 
 	// flags
 	cmd.Flags().StringVarP(&outputFileName, "output-file", "o", "xDocs.md", "Filename used for markdown docs output")
+	cmd.Flags().BoolVarP(&printXRDOnly, "xrd-only", "", false, "Output only XRD specifications")
 
 	return cmd
 }
