@@ -18,6 +18,8 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const xrdOutputFieldName = "status"
+
 // GenMarkdownDocs driver function for markdown sub-command
 func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 	outputOpts, err := getOutputOpts(cmd)
@@ -47,11 +49,13 @@ func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 				return err
 			}
 
+			var xrdInputData []XRDSpecData
 			var xrdOutputData []XRDSpecData
-			getXRDSpecData(openAPIV3Schema, &xrdOutputData, []string{}, []string{})
+			getXRDSpecData(openAPIV3Schema, &xrdInputData, &xrdOutputData, []string{}, []string{})
 			xrdVersions = append(xrdVersions, XRDVersion{
-				Version: version.Name,
-				XRDSpec: xrdOutputData,
+				Version:       version.Name,
+				XRDInputSpec:  xrdInputData,
+				XRDOutputSpec: xrdOutputData,
 			})
 		}
 
@@ -142,9 +146,9 @@ func getOpenAPIV3Schema(rawSchemaData []byte) (extv1.JSONSchemaProps, error) {
 }
 
 // getXRDSpecData returns the specifications for the given XRD API
-func getXRDSpecData(schema extv1.JSONSchemaProps, xrcOutputData *[]XRDSpecData, schemaPath []string, requiredFields []string) {
+func getXRDSpecData(schema extv1.JSONSchemaProps, xrdInputData *[]XRDSpecData, xrdOutputData *[]XRDSpecData, schemaPath []string, requiredFields []string) {
 	for propName, propValue := range schema.Properties {
-		*xrcOutputData = append(*xrcOutputData, XRDSpecData{
+		specData := XRDSpecData{
 			FieldName:   propName,
 			Path:        strings.Join(schemaPath, "."),
 			Type:        propValue.Type,
@@ -156,10 +160,18 @@ func getXRDSpecData(schema extv1.JSONSchemaProps, xrcOutputData *[]XRDSpecData, 
 				}
 				return "n/a"
 			}(),
-		})
+		}
+
+		// store XRD output specs separately
+		if propName == xrdOutputFieldName || slices.Contains(schemaPath, xrdOutputFieldName) {
+			*xrdOutputData = append(*xrdOutputData, specData)
+		} else {
+			*xrdInputData = append(*xrdInputData, specData)
+		}
+
 		if propValue.Properties != nil {
 			// recursively iterate all the nested properties
-			getXRDSpecData(propValue, xrcOutputData, append(schemaPath, propName), propValue.Required)
+			getXRDSpecData(propValue, xrdInputData, xrdOutputData, append(schemaPath, propName), propValue.Required)
 		}
 	}
 }

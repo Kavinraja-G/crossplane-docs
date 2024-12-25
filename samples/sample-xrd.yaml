@@ -46,3 +46,15 @@ spec:
                     - instanceSize
               required:
                 - parameters
+            status:
+              type: object
+              properties:
+                dbConnectionURL:
+                  description: String that contains the URL of the Database connection
+                  type: string
+                status:
+                  description: Status of the Database itself
+                  type: string
+                upgradeEligibility:
+                  description: Flag to check eligibility for DB upgrade
+                  type: boolean
