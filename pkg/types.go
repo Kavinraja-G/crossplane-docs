@@ -24,8 +24,9 @@ type XRDSpecData struct {
 
 // XRDVersion used for representing individual API versions
 type XRDVersion struct {
-	Version string
-	XRDSpec []XRDSpecData
+	Version       string
+	XRDInputSpec  []XRDSpecData
+	XRDOutputSpec []XRDSpecData
 }
 
 // CompResourceDefinitionData defines the XRD data and its XR, XRC details if any

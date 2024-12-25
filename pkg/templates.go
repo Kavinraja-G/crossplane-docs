@@ -13,9 +13,16 @@ var markdownGenericTemplate = `
 #### XRD Spec
 {{- range .LinkedXRD.Versions }}
 ##### Version: {{ .Version }}
+##### Inputs
 | Field | Path | Type | Description | Default | Required |
 |------|-------|------|-------|-------|-------|
-{{- range .XRDSpec }}
+{{- range .XRDInputSpec }}
+| {{ .FieldName }} | {{ .Path }} | {{ .Type }} | {{ .Description }} | {{ .Default }} | {{ .Required }} |
+{{- end }}
+##### Outputs
+| Field | Path | Type | Description | Default | Required |
+|------|-------|------|-------|-------|-------|
+{{- range .XRDOutputSpec }}
 | {{ .FieldName }} | {{ .Path }} | {{ .Type }} | {{ .Description }} | {{ .Default }} | {{ .Required }} |
 {{- end }}
 {{- end }}
@@ -37,9 +44,16 @@ var markdownXRDOnlyTemplate = `
 #### Specs
 {{- range .Versions }}
 ##### Version: {{ .Version }}
+##### Inputs
 | Field | Path | Type | Description | Default |  Required |
 |------|-------|------|-------|-------|-------|
-{{- range .XRDSpec }}
+{{- range .XRDInputSpec }}
+| {{ .FieldName }} | {{ .Path }} | {{ .Type }} | {{ .Description }} | {{ .Default }} | {{ .Required }} |
+{{- end }}
+##### Outputs
+| Field | Path | Type | Description | Default |  Required |
+|------|-------|------|-------|-------|-------|
+{{- range .XRDOutputSpec }}
 | {{ .FieldName }} | {{ .Path }} | {{ .Type }} | {{ .Description }} | {{ .Default }} | {{ .Required }} |
 {{- end }}
 {{- end }}
