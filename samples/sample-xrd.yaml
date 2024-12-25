@@ -28,12 +28,14 @@ spec:
                     storageGB:
                       type: integer
                       description: size of the Database in GB - integer
+                      default: 2
                     dbName:
                       type: string
                       description: name of the new DB inside the DB instance - string
                     instanceSize:
                       type: string
                       description: instance size - string
+                      default: "large"
                       enum:
                         - small
                         - medium

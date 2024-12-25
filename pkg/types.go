@@ -18,6 +18,7 @@ type XRDSpecData struct {
 	Path        string
 	Type        string
 	Description string
+	Default     string
 	Required    bool
 }
 
