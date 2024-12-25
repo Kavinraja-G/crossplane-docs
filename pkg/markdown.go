@@ -49,7 +49,6 @@ func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 
 			var xrdOutputData []XRDSpecData
 			getXRDSpecData(openAPIV3Schema, &xrdOutputData, []string{}, []string{})
-
 			xrdVersions = append(xrdVersions, XRDVersion{
 				Version: version.Name,
 				XRDSpec: xrdOutputData,
@@ -151,6 +150,12 @@ func getXRDSpecData(schema extv1.JSONSchemaProps, xrcOutputData *[]XRDSpecData, 
 			Type:        propValue.Type,
 			Description: propValue.Description,
 			Required:    slices.Contains(requiredFields, propName),
+			Default: func() string {
+				if propValue.Default != nil {
+					return string(propValue.Default.Raw)
+				}
+				return "n/a"
+			}(),
 		})
 		if propValue.Properties != nil {
 			// recursively iterate all the nested properties
