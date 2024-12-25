@@ -148,6 +148,8 @@ func getOpenAPIV3Schema(rawSchemaData []byte) (extv1.JSONSchemaProps, error) {
 // getXRDSpecData returns the specifications for the given XRD API
 func getXRDSpecData(schema extv1.JSONSchemaProps, xrdInputData *[]XRDSpecData, xrdOutputData *[]XRDSpecData, schemaPath []string, requiredFields []string) {
 	for propName, propValue := range schema.Properties {
+		fullPath := append(schemaPath, propName)
+
 		specData := XRDSpecData{
 			FieldName:   propName,
 			Path:        strings.Join(schemaPath, "."),
@@ -169,9 +171,19 @@ func getXRDSpecData(schema extv1.JSONSchemaProps, xrdInputData *[]XRDSpecData, x
 			*xrdInputData = append(*xrdInputData, specData)
 		}
 
-		if propValue.Properties != nil {
+		// check if this is an array of objects
+		if propValue.Type == "array" && propValue.Items != nil {
+			// handle items recursively if they are objects
+			itemSchema := propValue.Items.Schema
+			if itemSchema.Type == "object" {
+				getXRDSpecData(*itemSchema, xrdInputData, xrdOutputData, fullPath, itemSchema.Required)
+			}
+			continue
+		}
+
+		if propValue.Type == "object" && propValue.Properties != nil {
 			// recursively iterate all the nested properties
-			getXRDSpecData(propValue, xrdInputData, xrdOutputData, append(schemaPath, propName), propValue.Required)
+			getXRDSpecData(propValue, xrdInputData, xrdOutputData, fullPath, propValue.Required)
 		}
 	}
 }
