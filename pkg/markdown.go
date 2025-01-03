@@ -181,7 +181,7 @@ func getXRDSpecData(schema extv1.JSONSchemaProps, xrdInputData *[]XRDSpecData, x
 			continue
 		}
 
-		if propValue.Type == "object" && propValue.Properties != nil {
+		if propValue.Properties != nil {
 			// recursively iterate all the nested properties
 			getXRDSpecData(propValue, xrdInputData, xrdOutputData, fullPath, propValue.Required)
 		}
