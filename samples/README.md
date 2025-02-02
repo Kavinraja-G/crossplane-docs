@@ -21,9 +21,9 @@
 | Field | Path | Type | Description | Default | Required |
 |------|-------|------|-------|-------|-------|
 | status |  | object |  | n/a | false |
+| dbConnectionURL | status | string | String that contains the URL of the Database connection | n/a | false |
 | status | status | string | Status of the Database itself | n/a | false |
 | upgradeEligibility | status | boolean | Flag to check eligibility for DB upgrade | n/a | false |
-| dbConnectionURL | status | string | String that contains the URL of the Database connection | n/a | false |
 #### Resources
 | Name | Kind | API Version |
 |------|------|-------------|

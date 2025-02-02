@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -147,7 +148,15 @@ func getOpenAPIV3Schema(rawSchemaData []byte) (extv1.JSONSchemaProps, error) {
 
 // getXRDSpecData returns the specifications for the given XRD API
 func getXRDSpecData(schema extv1.JSONSchemaProps, xrdInputData *[]XRDSpecData, xrdOutputData *[]XRDSpecData, schemaPath []string, requiredFields []string) {
-	for propName, propValue := range schema.Properties {
+	// extract property names and sort them to ensure deterministic order
+	propNames := make([]string, 0, len(schema.Properties))
+	for propName := range schema.Properties {
+		propNames = append(propNames, propName)
+	}
+	sort.Strings(propNames)
+
+	for _, propName := range propNames {
+		propValue := schema.Properties[propName]
 		fullPath := append(schemaPath, propName)
 
 		specData := XRDSpecData{
