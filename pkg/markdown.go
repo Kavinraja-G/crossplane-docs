@@ -9,10 +9,8 @@ import (
 	"text/template"
 
 	"github.com/Kavinraja-G/crossplane-docs/utils"
-
-	"github.com/spf13/cobra"
-
 	xv1 "github.com/crossplane/crossplane/apis/apiextensions/v1"
+	"github.com/spf13/cobra"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/strings/slices"
@@ -220,10 +218,8 @@ func discoverCompositions(searchPath string) ([]xv1.Composition, error) {
 		}
 
 		// validate if it is a Composition by checking the Kind
-		// support only if the composition mode is Resources
 		kind := comp.Kind
-		compMode := comp.Spec.Mode
-		if (kind != "" && kind == xv1.CompositionKind) && (compMode == nil || *compMode == xv1.CompositionModeResources) {
+		if kind != "" && kind == xv1.CompositionKind {
 			discoveredCompositions = append(discoveredCompositions, comp)
 		}
 	}

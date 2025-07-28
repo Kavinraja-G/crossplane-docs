@@ -26,11 +26,13 @@ var markdownGenericTemplate = `
 | {{ .FieldName }} | {{ .Path }} | {{ .Type }} | {{ .Description }} | {{ .Default }} | {{ .Required }} |
 {{- end }}
 {{- end }}
+{{- if .Resources }}
 #### Resources
 | Name | Kind | API Version |
 |------|------|-------------|
 {{- range .Resources }}
 | {{ .Name }} | {{ .Kind }} | {{ .APIVersion }} |
+{{- end }}
 {{- end }}
 {{- end }}
 `
