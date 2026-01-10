@@ -58,10 +58,16 @@ func GenMarkdownDocs(cmd *cobra.Command, searchPath string) error {
 			})
 		}
 
+		// check claimNames if exists
+		var claimKind string
+		if xrd.Spec.ClaimNames != nil {
+			claimKind = xrd.Spec.ClaimNames.Kind
+		}
+
 		xrdOutputs = append(xrdOutputs, CompResourceDefinitionData{
 			Name:                  xrd.Name,
 			CompositeResourceKind: xrd.Spec.Names.Kind,
-			ClaimNameKind:         xrd.Spec.ClaimNames.Kind,
+			ClaimNameKind:         claimKind,
 			Versions:              xrdVersions,
 		})
 	}
